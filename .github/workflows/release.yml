@@ -17,7 +17,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Install vsce (pinned)
-        run: npm install -g @vscode/vsce@2.27.2
+        run: npm install -g vsce@2.27.2
       - name: Package extension
         run: vsce package
       - name: Create GitHub Release
