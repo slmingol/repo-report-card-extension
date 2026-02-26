@@ -23,7 +23,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
       - name: Install dependencies
         run: npm ci
       - name: Bump version and create tag
@@ -31,8 +31,8 @@ jobs:
         uses: phips28/gh-action-bump-version@v10.1.1
         with:
           tag-prefix: 'v'
-      - name: Install vsce (pinned)
-        run: npm install -g vsce@2.27.2
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
       - name: Package extension
         run: vsce package
       - name: Create GitHub Release
