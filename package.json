@@ -1,0 +1,36 @@
+{
+  "name": "repo-report-card",
+  "displayName": "Repo Report Card",
+  "description": "Grade repositories with Principal Skinner using GitHub Copilot",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "repo-report-card.analyze",
+        "title": "Repo Report Card: Analyze Repositories"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "simple-git": "^3.21.0"
+  }
+}
