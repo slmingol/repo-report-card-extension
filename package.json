@@ -14,9 +14,6 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onCommand:repo-report-card.analyze"
-  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
