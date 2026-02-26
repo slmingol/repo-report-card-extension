@@ -31,8 +31,8 @@ jobs:
         uses: phips28/gh-action-bump-version@v10.1.1
         with:
           tag-prefix: 'v'
-      - name: Install vsce
-        run: npm install -g @vscode/vsce
+      - name: Install vsce (pinned)
+        run: npm install -g @vscode/vsce@2.27.2
       - name: Package extension
         run: vsce package
       - name: Create GitHub Release
