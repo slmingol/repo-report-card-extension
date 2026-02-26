@@ -37,11 +37,29 @@ vsce package
 code --install-extension repo-report-card-1.0.0.vsix
 ```
 
-## Usage
-1. Open the Command Palette and run `Repo Report Card: Analyze Repositories`.
-2. Enter one or more GitHub repository URLs (one per line).
-3. Click `Grade These Repositories`.
-4. When the analysis is complete, click `Save to PDF` to export the report (logo included).
+## Usage (Step-by-Step)
+
+### 1. Download the Extension
+- Go to the [GitHub Releases page](https://github.com/slmingol/repo-report-card-extension/releases/latest).
+- Download the latest `.vsix` file (e.g., `repo-report-card-1.0.0.vsix`) to your computer. You can save it anywhere you like (e.g., your Downloads folder).
+
+### 2. Install the Extension in VS Code
+- Open Visual Studio Code.
+- Open the Command Palette:
+  - On Mac: `Cmd+Shift+P`
+  - On Windows/Linux: `Ctrl+Shift+P`
+- Type `Extensions: Install from VSIX...` and select it.
+- In the file dialog, navigate to and select the `.vsix` file you downloaded.
+- Wait for the confirmation message that the extension was installed.
+- If prompted, reload or restart VS Code.
+
+### 3. Run the Extension
+- Open the Command Palette again (`Cmd+Shift+P` or `Ctrl+Shift+P`).
+- Type and select: `Repo Report Card: Analyze Repositories`.
+- Enter one or more GitHub repository URLs (one per line) in the input box.
+- Click the `Grade These Repositories` button.
+- Wait for the analysis to complete. The report card will be displayed in the panel.
+- To save the report (including the logo) as a PDF, click the `Save to PDF` button.
 
 ## How It Works
 The extension:
