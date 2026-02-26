@@ -2,7 +2,10 @@ import * as vscode from 'vscode';
 import { analyzeRepositories } from './analyzer';
 import { RepoReportCardPanel } from './panel';
 
-// Extension activation entry point
+/**
+ * Extension activation entry point
+ * Registers the repo-report-card.analyze command
+ */
 export function activate(context: vscode.ExtensionContext) {
     console.log('Repo Report Card extension is now active!');
 
