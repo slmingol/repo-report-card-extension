@@ -2,7 +2,7 @@
   "name": "repo-report-card",
   "displayName": "Repo Report Card",
   "description": "Grade repositories with Principal Skinner using GitHub Copilot",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "engines": {
     "vscode": "^1.85.0"
   },
