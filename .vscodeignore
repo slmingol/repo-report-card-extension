@@ -1,7 +1,9 @@
-node_modules
 .vscode-test/
 out/test/
 src/
 .gitignore
 tsconfig.json
 *.vsix
+node_modules/**/*.md
+node_modules/**/*.ts
+node_modules/**/tsconfig.json
