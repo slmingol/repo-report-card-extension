@@ -42,14 +42,14 @@ export async function analyzeRepositories(repoUrls: string[]): Promise<RepoAnaly
 
 async function analyzeRepoWithCopilot(repoInfo: RepoInfo): Promise<RepoAnalysis> {
     try {
-        // Get all available language models
+        // Get Claude Sonnet 4.5 model
         const models = await vscode.lm.selectChatModels({
             vendor: 'copilot',
-            family: 'gpt-4o'
+            family: 'claude-sonnet'
         });
 
         if (models.length === 0) {
-            throw new Error('No Copilot model available. Make sure you have GitHub Copilot enabled.');
+            throw new Error('No Claude Sonnet model available. Make sure you have GitHub Copilot enabled with Claude access.');
         }
 
         const model = models[0];
@@ -59,7 +59,7 @@ async function analyzeRepoWithCopilot(repoInfo: RepoInfo): Promise<RepoAnalysis>
             .map(f => `File: ${f.path}\n\`\`\`\n${f.content}\n\`\`\``)
             .join('\n\n');
 
-        const prompt = `You are a senior code reviewer analyzing the repository "${repoInfo.name}".
+        const prompt = `You are a senior code reviewer analyzing the repository "${repoInfo.name}" using Claude Sonnet 4.5.
 
 Here is a sample of the repository's code:
 

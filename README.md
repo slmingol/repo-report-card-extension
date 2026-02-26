@@ -1,12 +1,12 @@
 # Repo Report Card VS Code Extension
 
-> Grade GitHub repositories with Principal Skinner using GitHub Copilot!
+> Grade GitHub repositories with Principal Skinner using Claude Sonnet 4.5 (via GitHub Copilot)!
 
 ## Features
 - 📊 Analyze multiple GitHub repositories at once
 - 🎓 Get grades (A-F) based on code quality
 - 📝 Receive 10 specific improvement suggestions per repo
-- 💬 Uses your GitHub Copilot subscription (no additional API keys needed!)
+- 💬 Uses Claude Sonnet 4.5 via your GitHub Copilot subscription (no additional API keys needed!)
 - 🎨 Beautiful Principal Skinner themed interface
 - 📄 Export the report (with logo) to PDF
 - 🤖 Automated packaging and release via GitHub Actions
@@ -65,7 +65,7 @@ code --install-extension repo-report-card-1.0.0.vsix
 The extension:
 1. Clones each repository (shallow clone)
 2. Extracts source code files
-3. Sends them to GitHub Copilot for analysis
+3. Sends them to Claude Sonnet 4.5 (via GitHub Copilot) for analysis
 4. Displays results with grades, rankings, and improvement suggestions
 5. Cleans up temporary files
 
@@ -113,7 +113,7 @@ The extension:
 - The workflow will bump the version, package the extension, and publish a release with the `.vsix` artifact.
 
 ## Privacy
-- All analysis happens through your GitHub Copilot subscription
+- All analysis happens through your GitHub Copilot subscription using Claude Sonnet 4.5
 - Repositories are cloned to temp directories and deleted after analysis
 - No data is sent to third-party services
 
