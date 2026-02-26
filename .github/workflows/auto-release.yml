@@ -1,0 +1,43 @@
+name: Bump Version and Release VS Code Extension
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'tsconfig.json'
+      - 'media/**'
+      - 'README.md'
+
+jobs:
+  bump-version-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm ci
+      - name: Bump version and create tag
+        id: version
+        uses: phips28/gh-action-bump-version@v10.1.1
+        with:
+          tag-prefix: 'v'
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
+      - name: Package extension
+        run: vsce package
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: repo-report-card-*.vsix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
