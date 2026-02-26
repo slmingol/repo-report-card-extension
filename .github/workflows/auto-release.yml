@@ -33,6 +33,8 @@ jobs:
           tag-prefix: 'v'
       - name: Install vsce
         run: npm install -g @vscode/vsce
+      - name: Clean old packages
+        run: rm -f *.vsix
       - name: Package extension
         run: vsce package
       - name: Create GitHub Release
