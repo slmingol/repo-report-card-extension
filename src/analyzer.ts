@@ -11,6 +11,7 @@ export interface RepoAnalysis {
     repoName: string;
     repoUrl: string;
     score: number;
+    cleanlinessScore: number;
     improvementPlan: ImprovementPoint[];
     summary: string;
     error?: string;
@@ -30,6 +31,7 @@ export async function analyzeRepositories(repoUrls: string[]): Promise<RepoAnaly
                 repoName: url.split('/').pop() || 'unknown',
                 repoUrl: url,
                 score: 0,
+                cleanlinessScore: 0,
                 improvementPlan: [],
                 summary: '',
                 error: error.message
@@ -61,21 +63,35 @@ async function analyzeRepoWithCopilot(repoInfo: RepoInfo): Promise<RepoAnalysis>
 
         const prompt = `You are a senior code reviewer analyzing the repository "${repoInfo.name}".
 
+Here is a list of the criteria for clean code:
+1. Readability: The code is easy to read and comprehend. Variable, function, and class names are meaningful and self-explanatory; code is well-formatted and consistently styled.
+2. Simplicity: The code solves problems in the simplest possible way without unnecessary complexity or clever tricks.
+3. Consistency: The code follows a consistent style and conventions (naming, indentation, spacing, etc.) throughout the codebase.
+4. Maintainability: Code is organized and modular, making it easy to modify, extend, or fix bugs without introducing new issues.
+5. Documentation: The code is self-explanatory as much as possible, but essential comments and documentation are present where non-obvious logic occurs.
+6. No Duplicates (DRY Principle): Repeated or duplicated code is avoided. Common functionality is extracted and reused.
+7. Extensibility: The code can be extended with new functionality without extensive rewrites or breaking existing code.
+
+
 Here is a sample of the repository's code:
 
 ${codeContext}
 
 Please analyze this repository and provide:
 1. An overall quality score from 0-100
-2. A brief summary of the repository's strengths and weaknesses
-3. Exactly 10 specific improvement points, each with:
+2. A clean code score from 0-100 based on the criteria for clean code given
+2. A brief summary of the repository's strengths and weaknesses, focusing more on code cleanliness based on the criterias
+3. Exactly 5 specific improvement points, each with:
    - category: A short category name
    - description: Detailed description of the improvement
    - priority: 'High', 'Medium', or 'Low'
 
+If the url is a pull request, only analyze the changes made in the pull request.
+
 Respond ONLY with valid JSON in this exact format:
 {
   "score": <number 0-100>,
+  "cleanlinessScore": <number 0-100>,
   "summary": "<your summary>",
   "improvementPlan": [
     {
@@ -109,6 +125,7 @@ Respond ONLY with valid JSON in this exact format:
             repoName: repoInfo.name,
             repoUrl: repoInfo.url,
             score: analysis.score,
+            cleanlinessScore: analysis.cleanlinessScore,
             summary: analysis.summary,
             improvementPlan: analysis.improvementPlan.slice(0, 10)
         };
@@ -118,6 +135,7 @@ Respond ONLY with valid JSON in this exact format:
             repoName: repoInfo.name,
             repoUrl: repoInfo.url,
             score: 0,
+            cleanlinessScore: 0,
             improvementPlan: [],
             summary: '',
             error: error.message

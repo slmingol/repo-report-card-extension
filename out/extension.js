@@ -4,6 +4,10 @@ exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = require("vscode");
 const panel_1 = require("./panel");
+/**
+ * Extension activation entry point
+ * Registers the repo-report-card.analyze command
+ */
 function activate(context) {
     console.log('Repo Report Card extension is now active!');
     let disposable = vscode.commands.registerCommand('repo-report-card.analyze', async () => {

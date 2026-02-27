@@ -41,8 +41,8 @@ class RepoReportCardPanel {
             // Sort by score
             const ranking = results
                 .filter(r => !r.error)
-                .sort((a, b) => b.score - a.score)
-                .map(r => ({ repoName: r.repoName, score: r.score }));
+                .sort((a, b) => b.cleanlinessScore - a.cleanlinessScore)
+                .map(r => ({ repoName: r.repoName, cleanlinessScore: r.cleanlinessScore }));
             this._panel.webview.postMessage({
                 command: 'analysisComplete',
                 results: { analyses: results, ranking }
@@ -475,13 +475,13 @@ https://github.com/vercel/next.js"></textarea>
             if (data.ranking.length > 0) {
                 html += '<div class="ranking"><h2>🏆 Rankings</h2>';
                 data.ranking.forEach((item, index) => {
-                    const grade = getLetterGrade(item.score);
+                    const grade = getLetterGrade(item.cleanlinessScore);
                     html += \`
                         <div class= "ranking-item">
                             <span class="rank">#\${index + 1}</span>
                             <span style="flex: 1;">\${item.repoName}</span>
                             <span class="grade grade-\${grade}" style="font-size: 1.5em; padding: 5px 15px;">\${grade}</span>
-                            <span style="margin-left: 15px; font-weight: bold;">\${item.score}/100</span>
+                            <span style="margin-left: 15px; font-weight: bold;">\${item.cleanlinessScore}/100</span>
                         </div>
                     \`;
                 });
@@ -490,8 +490,8 @@ https://github.com/vercel/next.js"></textarea>
 
             // Individual reports
             data.analyses.forEach(analysis => {
-                const grade = getLetterGrade(analysis.score);
-                const quote = getSkinnerQuote(analysis.score);
+                const grade = getLetterGrade(analysis.cleanlinessScore);
+                const quote = getSkinnerQuote(analysis.cleanlinessScore);
 
                 html += \`<div class="repo-card">
                     <div class="repo-header">
@@ -501,7 +501,8 @@ https://github.com/vercel/next.js"></textarea>
                         </div>
                         <div class="grade grade-\${grade}">\${grade}</div>
                     </div>
-                    <div style="text-align: center; font-size: 2em; margin: 20px 0;">\${analysis.score}/100</div>
+                    <div style="text-align: center; font-size: 2em; margin: 20px 0;">Clean Code Score: \${analysis.cleanlinessScore}/100</div>
+                    <div style="text-align: center; font-size: 2em; margin: 20px 0;">Overall Score: \${analysis.score}/100</div>
                 \`;
 
                 if (analysis.error) {
@@ -512,7 +513,7 @@ https://github.com/vercel/next.js"></textarea>
                             <div class="assessment-title">Principal's Assessment: \${quote}</div>
                             <div class="summary">\${analysis.summary}</div>
                         </div>
-                        <h3>📝 Areas Requiring Attention (10 Points):</h3>
+                        <h3>📝 Areas Requiring Attention:</h3>
                         <ul class="improvement-list">
                     \`;
 
