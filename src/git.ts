@@ -113,9 +113,24 @@ export async function cloneRepositoryWithPR(prUrl: string): Promise<RepoInfo> {
     await gitRepo.fetch('origin', `pull/${prNumber}/head:pr-${prNumber}`);
     await gitRepo.checkout(`pr-${prNumber}`);
 
+    // Fetch main branch with more depth to establish merge base
+    await gitRepo.fetch('origin', 'main:refs/remotes/origin/main', ['--depth', '50']);
+
     // Get the diff to find changed files
-    const diff = await gitRepo.diff(['origin/main...HEAD', '--name-only']);
-    const changedFiles = diff.split('\n').filter(f => f.trim());
+    let changedFiles: string[] = [];
+    try {
+        const diff = await gitRepo.diff(['origin/main...HEAD', '--name-only']);
+        changedFiles = diff.split('\n').filter(f => f.trim());
+    } catch (error) {
+        // If three-dot diff fails (no merge base), try two-dot diff
+        try {
+            const diff = await gitRepo.diff(['origin/main..HEAD', '--name-only']);
+            changedFiles = diff.split('\n').filter(f => f.trim());
+        } catch (fallbackError) {
+            // If diff still fails, we'll analyze all files
+            console.warn('Unable to determine changed files, analyzing all files');
+        }
+    }
 
     // Get the full file list for context, but prioritize changed files
     const allFiles = await getRepoFiles(repoPath);
