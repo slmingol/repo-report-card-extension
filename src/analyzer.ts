@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { cloneRepository, cleanupRepo, RepoInfo } from './git';
+import { cloneRepository, cloneRepositoryWithPR, cleanupRepo, RepoInfo } from './git';
 
 export interface ImprovementPoint {
     category: string;
@@ -21,7 +21,13 @@ export async function analyzeRepositories(repoUrls: string[]): Promise<RepoAnaly
 
     for (const url of repoUrls) {
         try {
-            const repoInfo = await cloneRepository(url);
+            // Check if this is a PR URL
+            const isPRUrl = /github\.com\/[^\/]+\/[^\/]+\/pull\/\d+/.test(url);
+            
+            const repoInfo = isPRUrl 
+                ? await cloneRepositoryWithPR(url)
+                : await cloneRepository(url);
+                
             const analysis = await analyzeRepoWithCopilot(repoInfo);
             results.push(analysis);
             cleanupRepo(repoInfo.path);
@@ -67,20 +73,34 @@ async function analyzeRepoWithCopilot(repoInfo: RepoInfo): Promise<RepoAnalysis>
         const model = models[0];
         console.log(`Using ${modelName} for repository analysis`);
 
-        // Build the code context
+        // Build the code context with indication of changed files for PRs
         const codeContext = repoInfo.files
-            .map(f => `File: ${f.path}\n\`\`\`\n${f.content}\n\`\`\``)
+            .map(f => {
+                const changeIndicator = f.isChanged ? ' [CHANGED IN PR]' : '';
+                return `File: ${f.path}${changeIndicator}\n\`\`\`\n${f.content}\n\`\`\``;
+            })
             .join('\n\n');
 
-        const prompt = `You are a senior code reviewer analyzing the repository "${repoInfo.name}".
+        // Adjust prompt based on whether this is a PR or full repo analysis
+        const analysisType = repoInfo.isPR 
+            ? `pull request #${repoInfo.prNumber} in the repository "${repoInfo.name.split(' (PR')[0]}"`
+            : `repository "${repoInfo.name}"`;
+        
+        const focusGuidance = repoInfo.isPR
+            ? 'Focus your analysis on the changed files (marked with [CHANGED IN PR]) and their impact on the overall codebase. Evaluate the quality of the changes, potential issues, and how well they integrate with existing code.'
+            : 'Analyze the overall code quality, architecture, and maintainability of the repository.';
 
-Here is a sample of the repository's code:
+        const prompt = `You are a senior code reviewer analyzing the ${analysisType}.
+
+Here is ${repoInfo.isPR ? 'the code with changes highlighted' : 'a sample of the repository\'s code'}:
 
 ${codeContext}
 
-Please analyze this repository and provide:
+${focusGuidance}
+
+Please analyze this ${repoInfo.isPR ? 'pull request' : 'repository'} and provide:
 1. An overall quality score from 0-100
-2. A brief summary of the repository's strengths and weaknesses
+2. A brief summary of the ${repoInfo.isPR ? 'changes\' strengths and weaknesses' : 'repository\'s strengths and weaknesses'}
 3. Exactly 10 specific improvement points, each with:
    - category: A short category name
    - description: Detailed description of the improvement

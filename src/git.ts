@@ -9,7 +9,9 @@ export interface RepoInfo {
     name: string;
     url: string;
     path: string;
-    files: { path: string; content: string }[];
+    files: { path: string; content: string; isChanged?: boolean }[];
+    isPR?: boolean;
+    prNumber?: number;
 }
 
 export async function cloneRepository(repoUrl: string): Promise<RepoInfo> {
@@ -79,3 +81,70 @@ export function cleanupRepo(repoPath: string): void {
         fs.rmSync(repoPath, { recursive: true, force: true });
     }
 }
+
+/**
+ * Clones a repository and fetches a specific pull request
+ * PR URL format: https://github.com/owner/repo/pull/123
+ */
+export async function cloneRepositoryWithPR(prUrl: string): Promise<RepoInfo> {
+    // Parse the PR URL
+    const match = prUrl.match(/github\.com\/([^\/]+)\/([^\/]+)\/pull\/(\d+)/);
+    if (!match) {
+        throw new Error('Invalid GitHub PR URL. Expected format: https://github.com/owner/repo/pull/123');
+    }
+
+    const [, owner, repo, prNumber] = match;
+    const repoUrl = `https://github.com/${owner}/${repo}.git`;
+    const repoName = repo;
+    const timestamp = Date.now();
+    const repoPath = path.join(CLONE_DIR, `${repoName}_pr${prNumber}_${timestamp}`);
+
+    if (!fs.existsSync(CLONE_DIR)) {
+        fs.mkdirSync(CLONE_DIR, { recursive: true });
+    }
+
+    const git: SimpleGit = simpleGit();
+    
+    // Clone the repository
+    await git.clone(repoUrl, repoPath, ['--depth', '1']);
+    
+    // Fetch the PR
+    const gitRepo: SimpleGit = simpleGit(repoPath);
+    await gitRepo.fetch('origin', `pull/${prNumber}/head:pr-${prNumber}`);
+    await gitRepo.checkout(`pr-${prNumber}`);
+
+    // Get the diff to find changed files
+    const diff = await gitRepo.diff(['origin/main...HEAD', '--name-only']);
+    const changedFiles = diff.split('\n').filter(f => f.trim());
+
+    // Get the full file list for context, but prioritize changed files
+    const allFiles = await getRepoFiles(repoPath);
+    
+    // Prioritize changed files and include up to 20 files total
+    const changedFilePaths = changedFiles
+        .map(f => path.join(repoPath, f))
+        .filter(f => fs.existsSync(f) && fs.statSync(f).isFile());
+    
+    const remainingSlots = Math.max(0, 20 - changedFilePaths.length);
+    const otherFiles = allFiles
+        .filter(f => !changedFilePaths.includes(f))
+        .slice(0, remainingSlots);
+    
+    const filesToAnalyze = [...changedFilePaths, ...otherFiles];
+
+    const fileContents = filesToAnalyze.map(filePath => ({
+        path: path.relative(repoPath, filePath),
+        content: getFileContent(filePath, 5000),
+        isChanged: changedFilePaths.includes(filePath)
+    }));
+
+    return {
+        name: `${repoName} (PR #${prNumber})`,
+        url: prUrl,
+        path: repoPath,
+        files: fileContents,
+        isPR: true,
+        prNumber: parseInt(prNumber, 10)
+    };
+}
+

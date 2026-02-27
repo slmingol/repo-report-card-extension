@@ -1,11 +1,13 @@
-# Repo Report Card VS Code Extension
+# Code Quality Report Card VS Code Extension
 
-> Grade GitHub repositories with Principal Skinner using AI models (via GitHub Copilot)!
+> Grade GitHub repositories AND pull requests with Principal Skinner using AI models (via GitHub Copilot)!
 
 ## Features
-- 📊 Analyze multiple GitHub repositories at once
+- 📊 Analyze entire GitHub repositories OR individual pull requests
+- 🔍 For PRs: Focused analysis on changed files and their impact
+- 📊 Analyze multiple targets at once (mix repos and PRs)
 - 🎓 Get grades (A-F) based on code quality
-- 📝 Receive 10 specific improvement suggestions per repo
+- 📝 Receive 10 specific improvement suggestions per analysis
 - 💬 Uses AI models (Claude Sonnet or GPT-4o) via your GitHub Copilot subscription (no additional API keys needed!)
 - 🎨 Beautiful Principal Skinner themed interface
 - 📄 Export the report (with logo) to PDF
@@ -56,18 +58,31 @@ code --install-extension repo-report-card-1.0.0.vsix
 ### 3. Run the Extension
 - Open the Command Palette again (`Cmd+Shift+P` or `Ctrl+Shift+P`).
 - Type and select: `Repo Report Card: Analyze Repositories`.
-- Enter one or more GitHub repository URLs (one per line) in the input box.
-- Click the `Grade These Repositories` button.
+- Enter one or more GitHub repository or pull request URLs (one per line) in the input box.
+  - Repository example: `https://github.com/facebook/react`
+  - Pull request example: `https://github.com/owner/repo/pull/123`
+- Click the `Grade and Analyze` button.
 - Wait for the analysis to complete. The report card will be displayed in the panel.
 - To save the report (including the logo) as a PDF, click the `Save to PDF` button.
 
 ## How It Works
+
+### For Repositories:
 The extension:
 1. Clones each repository (shallow clone)
 2. Extracts source code files
 3. Sends them to AI models (Claude Sonnet or GPT-4o) via GitHub Copilot for analysis
 4. Displays results with grades, rankings, and improvement suggestions
 5. Cleans up temporary files
+
+### For Pull Requests:
+The extension:
+1. Clones the repository and fetches the specific PR
+2. Identifies files changed in the PR
+3. Prioritizes changed files while including context from the broader codebase
+4. Sends the code to AI models with focus on the PR changes
+5. Provides targeted analysis of code quality and potential issues in the changes
+6. Cleans up temporary files
 
 ## Detailed Download, Install, Setup, and Run Instructions
 
@@ -95,8 +110,11 @@ The extension:
 ### 4. Run the Extension
 - Open the Command Palette (`Cmd+Shift+P` or `Ctrl+Shift+P`).
 - Type and select: `Repo Report Card: Analyze Repositories`
-- Enter one or more GitHub repository URLs (one per line) in the input box.
-- Click the `Grade These Repositories` button.
+- Enter one or more GitHub repository or pull request URLs (one per line) in the input box.
+  - For repositories: `https://github.com/facebook/react`
+  - For pull requests: `https://github.com/owner/repo/pull/123`
+  - You can mix both types in a single analysis!
+- Click the `Grade and Analyze` button.
 - Wait for the analysis to complete. The report card will be displayed in the panel.
 - To save the report (including the logo) as a PDF, click the `Save to PDF` button.
 

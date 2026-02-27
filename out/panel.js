@@ -14,7 +14,7 @@ class RepoReportCardPanel {
             RepoReportCardPanel.currentPanel._panel.reveal(column);
             return;
         }
-        const panel = vscode.window.createWebviewPanel('repoReportCard', 'Repo Report Card', column || vscode.ViewColumn.One, {
+        const panel = vscode.window.createWebviewPanel('repoReportCard', 'Code Quality Report Card', column || vscode.ViewColumn.One, {
             enableScripts: true,
             localResourceRoots: [extensionUri]
         });
@@ -354,25 +354,29 @@ class RepoReportCardPanel {
         <div class="header">
             <img src="${logoDataUrl}" alt="Principal Skinner" class="logo">
             <div class="title-container">
-                <h1>📊 Repo Report Card</h1>
-                <p class="subtitle">Powered by GitHub Copilot</p>
+                <h1>📊 Code Quality Report Card</h1>
+                <p class="subtitle">Analyze Repositories & Pull Requests | Powered by GitHub Copilot</p>
             </div>
         </div>
 
         <div class="form-group">
-            <label for="repoUrls">📚 Enter GitHub Repository URLs (one per line)</label>
-            <textarea id="repoUrls" rows="8" placeholder="https://github.com/facebook/react
+            <label for="repoUrls">📚 Enter GitHub Repository or Pull Request URLs (one per line)</label>
+            <textarea id="repoUrls" rows="8" placeholder="Repositories:
+https://github.com/facebook/react
 https://github.com/microsoft/vscode
-https://github.com/vercel/next.js"></textarea>
+
+Pull Requests:
+https://github.com/owner/repo/pull/123
+https://github.com/owner/repo/pull/456"></textarea>
         </div>
 
         <div class="button-group">
-            <button id="analyzeBtn">🎓 Grade These Repositories</button>
+            <button id="analyzeBtn">🎓 Grade and Analyze</button>
             <button id="pdfBtn" style="display: none;">📄 Save to PDF</button>
         </div>
 
         <div id="loading" style="display: none;">
-            <p>📝 Principal Skinner is grading your repositories...</p>
+            <p>📝 Principal Skinner is analyzing your code...</p>
         </div>
 
         <div id="results"></div>
@@ -394,7 +398,7 @@ https://github.com/vercel/next.js"></textarea>
                 .filter(url => url.length > 0);
 
             if (urls.length === 0) {
-                alert('Please enter at least one repository URL');
+                alert('Please enter at least one repository or pull request URL');
                 return;
             }
 
