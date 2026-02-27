@@ -81,6 +81,8 @@ async function analyzeRepoWithCopilot(repoInfo: RepoInfo): Promise<RepoAnalysis>
             })
             .join('\n\n');
 
+        console.log(`Code context size: ${codeContext.length} characters from ${repoInfo.files.length} files`);
+
         // Adjust prompt based on whether this is a PR or full repo analysis
         const analysisType = repoInfo.isPR 
             ? `pull request #${repoInfo.prNumber} in the repository "${repoInfo.name.split(' (PR')[0]}"`
@@ -106,7 +108,9 @@ Please analyze this ${repoInfo.isPR ? 'pull request' : 'repository'} and provide
    - description: Detailed description of the improvement
    - priority: 'High', 'Medium', or 'Low'
 
-Respond ONLY with valid JSON in this exact format:
+IMPORTANT: You MUST respond with ONLY valid JSON. Do not include any explanatory text before or after the JSON.
+
+Required JSON format:
 {
   "score": <number 0-100>,
   "summary": "<your summary>",
@@ -117,7 +121,9 @@ Respond ONLY with valid JSON in this exact format:
       "priority": "<High|Medium|Low>"
     }
   ]
-}`;
+}
+
+Return your response now as valid JSON:`;
 
         const messages = [
             vscode.LanguageModelChatMessage.User(prompt)
@@ -130,6 +136,11 @@ Respond ONLY with valid JSON in this exact format:
             fullResponse += fragment;
         }
 
+        // Check for empty response
+        if (!fullResponse || fullResponse.trim().length === 0) {
+            throw new Error('Copilot returned an empty response');
+        }
+
         // Parse the JSON response - try multiple extraction methods
         let jsonText = '';
         
@@ -137,17 +148,60 @@ Respond ONLY with valid JSON in this exact format:
         const markdownMatch = fullResponse.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
         if (markdownMatch) {
             jsonText = markdownMatch[1].trim();
-        } else {
-            // Second try: extract raw JSON from response
-            const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                jsonText = jsonMatch[0];
+        }
+        
+        // Second try: extract raw JSON from response (look for complete object)
+        if (!jsonText) {
+            // Try to find a complete JSON object by matching balanced braces
+            const jsonStart = fullResponse.indexOf('{');
+            if (jsonStart !== -1) {
+                let braceCount = 0;
+                let inString = false;
+                let escapeNext = false;
+                
+                for (let i = jsonStart; i < fullResponse.length; i++) {
+                    const char = fullResponse[i];
+                    
+                    if (escapeNext) {
+                        escapeNext = false;
+                        continue;
+                    }
+                    
+                    if (char === '\\') {
+                        escapeNext = true;
+                        continue;
+                    }
+                    
+                    if (char === '"') {
+                        inString = !inString;
+                        continue;
+                    }
+                    
+                    if (!inString) {
+                        if (char === '{') {
+                            braceCount++;
+                        } else if (char === '}') {
+                            braceCount--;
+                            if (braceCount === 0) {
+                                jsonText = fullResponse.substring(jsonStart, i + 1);
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
 
         if (!jsonText) {
-            console.error('Could not find JSON in response:', fullResponse);
-            throw new Error('Failed to parse Copilot response - no JSON found');
+            console.error('Could not find JSON in response.');
+            console.error('Response preview (first 500 chars):', fullResponse.substring(0, 500));
+            console.error('Response preview (last 500 chars):', fullResponse.substring(Math.max(0, fullResponse.length - 500)));
+            
+            // Return a more detailed error with response preview
+            const responsePreview = fullResponse.length > 200 
+                ? fullResponse.substring(0, 200) + '...' 
+                : fullResponse;
+            throw new Error(`No JSON found in response. Copilot returned: "${responsePreview}"`);
         }
 
         let analysis;
