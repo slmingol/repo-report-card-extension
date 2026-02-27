@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { analyzeRepositories, RepoAnalysis } from './analyzer';
+import * as packageJson from '../package.json';
 
 export class RepoReportCardPanel {
     public static currentPanel: RepoReportCardPanel | undefined;
@@ -377,6 +378,7 @@ export class RepoReportCardPanel {
             <div class="title-container">
                 <h1>📊 Code Quality Report Card</h1>
                 <p class="subtitle">Analyze Repositories & Pull Requests | Powered by GitHub Copilot</p>
+                <p class="version" style="font-size: 0.85em; color: #666; margin-top: 4px;">v${packageJson.version}</p>
             </div>
         </div>
 
