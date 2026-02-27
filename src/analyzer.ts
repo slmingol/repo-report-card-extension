@@ -130,13 +130,45 @@ Respond ONLY with valid JSON in this exact format:
             fullResponse += fragment;
         }
 
-        // Parse the JSON response
-        const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            throw new Error('Failed to parse Copilot response');
+        // Parse the JSON response - try multiple extraction methods
+        let jsonText = '';
+        
+        // First try: extract from markdown code fence
+        const markdownMatch = fullResponse.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+        if (markdownMatch) {
+            jsonText = markdownMatch[1].trim();
+        } else {
+            // Second try: extract raw JSON from response
+            const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                jsonText = jsonMatch[0];
+            }
         }
 
-        const analysis = JSON.parse(jsonMatch[0]);
+        if (!jsonText) {
+            console.error('Could not find JSON in response:', fullResponse);
+            throw new Error('Failed to parse Copilot response - no JSON found');
+        }
+
+        let analysis;
+        try {
+            analysis = JSON.parse(jsonText);
+        } catch (parseError: any) {
+            console.error('JSON parse error:', parseError.message);
+            console.error('Attempted to parse:', jsonText);
+            throw new Error(`Failed to parse Copilot response - invalid JSON: ${parseError.message}`);
+        }
+
+        // Validate the response structure
+        if (typeof analysis.score !== 'number') {
+            throw new Error('Invalid response: missing or invalid "score" field');
+        }
+        if (typeof analysis.summary !== 'string') {
+            throw new Error('Invalid response: missing or invalid "summary" field');
+        }
+        if (!Array.isArray(analysis.improvementPlan)) {
+            throw new Error('Invalid response: missing or invalid "improvementPlan" field');
+        }
 
         return {
             repoName: repoInfo.name,
