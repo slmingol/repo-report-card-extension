@@ -27,6 +27,13 @@ export async function cloneRepository(repoUrl: string): Promise<RepoInfo> {
     await git.clone(repoUrl, repoPath, ['--depth', '1']);
 
     const files = await getRepoFiles(repoPath);
+    
+    console.log(`Found ${files.length} files in repository ${repoName}`);
+    
+    if (files.length === 0) {
+        throw new Error(`No analyzable code files found in repository. The repository may be empty or contain only non-code files.`);
+    }
+    
     const fileContents = files.slice(0, 20).map(filePath => ({
         path: path.relative(repoPath, filePath),
         content: getFileContent(filePath, 5000)
@@ -42,8 +49,30 @@ export async function cloneRepository(repoUrl: string): Promise<RepoInfo> {
 
 export async function getRepoFiles(repoPath: string): Promise<string[]> {
     const files: string[] = [];
-    const extensions = ['.ts', '.tsx', '.js', '.jsx', '.py', '.java', '.go', '.rb', '.rs', '.c', '.cpp', '.h', '.cs', '.php'];
-    const ignoreDirs = ['node_modules', 'dist', 'build', '.next', 'coverage', '.git'];
+    const extensions = [
+        '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',  // JavaScript/TypeScript
+        '.py', '.pyw',  // Python
+        '.java',  // Java
+        '.go',  // Go
+        '.rb', '.rake',  // Ruby
+        '.rs',  // Rust
+        '.c', '.cpp', '.cc', '.cxx', '.h', '.hpp',  // C/C++
+        '.cs',  // C#
+        '.php',  // PHP
+        '.swift',  // Swift
+        '.kt', '.kts',  // Kotlin
+        '.scala',  // Scala
+        '.sh', '.bash',  // Shell
+        '.sql',  // SQL
+        '.yaml', '.yml',  // YAML
+        '.json',  // JSON
+        '.xml',  // XML
+        '.tf',  // Terraform
+        '.hcl',  // HCL
+        '.dockerfile', '.Dockerfile'  // Docker
+    ];
+    const ignoreDirs = ['node_modules', 'dist', 'build', '.next', 'coverage', '.git', 'vendor', 'target', '__pycache__', '.venv', 'venv'];
+    const specialFiles = ['Dockerfile', 'Makefile', 'Rakefile', 'Gemfile', 'Vagrantfile', 'Jenkinsfile'];
 
     function traverseDir(dir: string) {
         const items = fs.readdirSync(dir);
@@ -56,7 +85,10 @@ export async function getRepoFiles(repoPath: string): Promise<string[]> {
                     traverseDir(fullPath);
                 }
             } else if (stat.isFile()) {
-                if (extensions.some(ext => item.endsWith(ext))) {
+                const hasMatchingExtension = extensions.some(ext => item.endsWith(ext));
+                const isSpecialFile = specialFiles.includes(item);
+                
+                if (hasMatchingExtension || isSpecialFile) {
                     files.push(fullPath);
                 }
             }

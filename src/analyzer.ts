@@ -48,6 +48,11 @@ export async function analyzeRepositories(repoUrls: string[]): Promise<RepoAnaly
 
 async function analyzeRepoWithCopilot(repoInfo: RepoInfo): Promise<RepoAnalysis> {
     try {
+        // Check if we have files to analyze
+        if (!repoInfo.files || repoInfo.files.length === 0) {
+            throw new Error('No files available to analyze. The repository may be empty or contain only non-code files.');
+        }
+        
         // Try to get Claude Sonnet model first, fall back to GPT-4
         let models = await vscode.lm.selectChatModels({
             vendor: 'copilot',
