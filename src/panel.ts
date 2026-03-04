@@ -436,17 +436,25 @@ export class RepoReportCardPanel {
                 padding: 20px;
             }
 
-            .form-group, .button-group, #loading {
+            .form-group, .button-group, #loading, #progressBar {
                 display: none !important;
             }
 
             .repo-card {
                 page-break-inside: avoid;
+                break-inside: avoid;
                 margin: 20px 0;
             }
 
             .ranking {
-                page-break-after: always;
+                page-break-after: auto;
+                break-after: auto;
+                margin-bottom: 30px;
+            }
+            
+            .improvement-item {
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
         }
 
@@ -533,7 +541,7 @@ https://github.com/owner/repo/pull/456"></textarea>
             vscode.postMessage({ command: 'analyze', urls });
         });
 
-        pdfBtn.addEventListener('click', () => {
+        pdfBtn.addEventListener('click', async () => {
             const element = document.querySelector('.container');
             const opt = {
                 margin: 0.5,
@@ -546,19 +554,34 @@ https://github.com/owner/repo/pull/456"></textarea>
                     allowTaint: true,
                     logging: false,
                     dpi: 300,
-                    letterSpacing: 0
+                    letterSpacing: 0,
+                    windowWidth: 1200,
+                    windowHeight: element.scrollHeight
                 },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+                jsPDF: { 
+                    unit: 'in', 
+                    format: 'letter', 
+                    orientation: 'portrait',
+                    compress: true
+                },
+                pagebreak: { 
+                    mode: ['avoid-all', 'css', 'legacy'],
+                    before: '.repo-card',
+                    after: '.ranking'
+                },
+                enableLinks: false
             };
             
             // Hide form and buttons before generating PDF
             const formGroup = document.querySelector('.form-group');
             const buttonGroup = document.querySelector('.button-group');
             const loadingDiv = document.getElementById('loading');
+            const progressBarDiv = document.getElementById('progressBar');
             
             formGroup.style.display = 'none';
             buttonGroup.style.display = 'none';
             loadingDiv.style.display = 'none';
+            progressBarDiv.style.display = 'none';
             
             // Add PDF-specific class to improve text rendering
             element.classList.add('pdf-export');
@@ -570,10 +593,19 @@ https://github.com/owner/repo/pull/456"></textarea>
                 el.style.wordSpacing = '0px';
             });
             
-            html2pdf().set(opt).from(element).save().then(() => {
+            // Wait a moment for the DOM to stabilize
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            try {
+                await html2pdf().set(opt).from(element).save();
+            } catch (error) {
+                console.error('PDF generation error:', error);
+                alert('Error generating PDF. Please try again.');
+            } finally {
                 // Restore visibility and remove PDF class after PDF generation
                 formGroup.style.display = '';
                 buttonGroup.style.display = '';
+                progressBarDiv.style.display = 'none';
                 element.classList.remove('pdf-export');
                 
                 // Reset text spacing
@@ -581,7 +613,7 @@ https://github.com/owner/repo/pull/456"></textarea>
                     el.style.letterSpacing = '';
                     el.style.wordSpacing = '';
                 });
-            });
+            }
         });
 
         window.addEventListener('message', event => {
