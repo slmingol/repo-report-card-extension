@@ -17,10 +17,20 @@ export interface RepoAnalysis {
     error?: string;
 }
 
-export async function analyzeRepositories(repoUrls: string[]): Promise<RepoAnalysis[]> {
+export async function analyzeRepositories(
+    repoUrls: string[], 
+    progressCallback?: (current: number, total: number, currentUrl: string) => void
+): Promise<RepoAnalysis[]> {
     const results: RepoAnalysis[] = [];
 
-    for (const url of repoUrls) {
+    for (let i = 0; i < repoUrls.length; i++) {
+        const url = repoUrls[i];
+        
+        // Report progress
+        if (progressCallback) {
+            progressCallback(i + 1, repoUrls.length, url);
+        }
+        
         try {
             // Check if this is a PR URL
             const isPRUrl = /github\.com\/[^\/]+\/[^\/]+\/pull\/\d+/.test(url);
