@@ -67,11 +67,16 @@ export class RepoReportCardPanel {
                 });
             });
             
-            // Sort by score
+            // Sort by score - include all results (errors shown separately)
             const ranking = results
-                .filter(r => !r.error)
-                .sort((a, b) => b.score - a.score)
-                .map(r => ({ repoName: r.repoName, score: r.score }));
+                .sort((a, b) => {
+                    // Put errors at the end
+                    if (a.error && !b.error) return 1;
+                    if (!a.error && b.error) return -1;
+                    // Otherwise sort by score
+                    return b.score - a.score;
+                })
+                .map(r => ({ repoName: r.repoName, score: r.score, hasError: !!r.error }));
 
             this._panel.webview.postMessage({
                 command: 'analysisComplete',
@@ -335,6 +340,12 @@ export class RepoReportCardPanel {
         .grade-C { color: #ffc107; }
         .grade-D { color: #ff9800; }
         .grade-F { color: #f44336; }
+        .grade-ERROR { color: #9e9e9e; background: #f5f5f5; }
+
+        .ranking-error {
+            opacity: 0.7;
+            background: #fafafa;
+        }
 
         .assessment {
             background: white;
@@ -646,15 +657,28 @@ https://github.com/owner/repo/pull/456"></textarea>
             if (data.ranking.length > 0) {
                 html += '<div class="ranking"><h2>🏆 Rankings</h2>';
                 data.ranking.forEach((item, index) => {
-                    const grade = getLetterGrade(item.score);
-                    html += \`
-                        <div class= "ranking-item">
-                            <span class="rank">#\${index + 1}</span>
-                            <span style="flex: 1;">\${item.repoName}</span>
-                            <span class="grade grade-\${grade}" style="font-size: 1.5em; padding: 5px 15px;">\${grade}</span>
-                            <span style="margin-left: 15px; font-weight: bold;">\${item.score}/100</span>
-                        </div>
-                    \`;
+                    if (item.hasError) {
+                        // Show error repos with special styling
+                        html += \`
+                            <div class="ranking-item ranking-error">
+                                <span class="rank">#\${index + 1}</span>
+                                <span style="flex: 1;">\${item.repoName}</span>
+                                <span class="grade grade-ERROR" style="font-size: 1.5em; padding: 5px 15px;">ERROR</span>
+                                <span style="margin-left: 15px; font-weight: bold; color: #999;">Technical Issue</span>
+                            </div>
+                        \`;
+                    } else {
+                        // Normal display for successfully analyzed repos
+                        const grade = getLetterGrade(item.score);
+                        html += \`
+                            <div class="ranking-item">
+                                <span class="rank">#\${index + 1}</span>
+                                <span style="flex: 1;">\${item.repoName}</span>
+                                <span class="grade grade-\${grade}" style="font-size: 1.5em; padding: 5px 15px;">\${grade}</span>
+                                <span style="margin-left: 15px; font-weight: bold;">\${item.score}/100</span>
+                            </div>
+                        \`;
+                    }
                 });
                 html += '</div>';
             }
@@ -676,7 +700,25 @@ https://github.com/owner/repo/pull/456"></textarea>
                 \`;
 
                 if (analysis.error) {
-                    html += \`<div class="error">❌ \${analysis.error}</div>\`;
+                    html += \`
+                        <div class="error">
+                            <div style="font-size: 1.3em; font-weight: bold; margin-bottom: 10px;">⚠️ Technical Error - Unable to Analyze</div>
+                            <div style="margin-bottom: 10px;">This repository/PR could not be analyzed due to a technical issue, <strong>not</strong> because of code quality problems.</div>
+                            <div style="background: white; padding: 15px; border-radius: 5px; margin-top: 10px;">
+                                <strong>Error Details:</strong><br>
+                                \${analysis.error}
+                            </div>
+                            <div style="margin-top: 15px; font-size: 0.9em; color: #666;">
+                                <strong>Common causes:</strong>
+                                <ul style="margin: 5px 0 0 20px;">
+                                    <li>Repository is private or doesn't exist</li>
+                                    <li>Network or authentication issues</li>
+                                    <li>Invalid URL format</li>
+                                    <li>Repository is empty or has no analyzable files</li>
+                                </ul>
+                            </div>
+                        </div>
+                    \`;
                 } else {
                     html += \`
                         <div class="assessment">
