@@ -58,7 +58,14 @@ export class RepoReportCardPanel {
         this._panel.webview.postMessage({ command: 'analysisStarted', count: urls.length });
 
         try {
-            const results = await analyzeRepositories(urls);
+            const results = await analyzeRepositories(urls, (current, total, currentUrl) => {
+                this._panel.webview.postMessage({
+                    command: 'analysisProgress',
+                    current,
+                    total,
+                    currentUrl
+                });
+            });
             
             // Sort by score
             const ranking = results
@@ -205,6 +212,62 @@ export class RepoReportCardPanel {
             padding: 40px;
             color: #667eea;
             font-size: 1.2em;
+        }
+
+        #progressBar {
+            margin-top: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            padding: 20px;
+            display: none;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .progress-track {
+            background: #e0e0e0;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            border-radius: 15px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            min-width: 40px;
+        }
+
+        .progress-status {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .progress-current {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .progress-next {
+            color: #666;
+            font-size: 0.9em;
         }
 
         #results {
@@ -415,6 +478,19 @@ https://github.com/owner/repo/pull/456"></textarea>
             <p>📝 Principal Skinner is analyzing your code...</p>
         </div>
 
+        <div id="progressBar" style="display: none;">
+            <div class="progress-header">
+                <span id="progressText">Processing repositories...</span>
+                <span id="progressCount">0/0</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill" style="width: 0%">
+                    <span id="progressPercent">0%</span>
+                </div>
+            </div>
+            <div class="progress-status" id="progressStatus"></div>
+        </div>
+
         <div id="results"></div>
     </div>
 
@@ -426,6 +502,11 @@ https://github.com/owner/repo/pull/456"></textarea>
         const repoUrlsInput = document.getElementById('repoUrls');
         const loading = document.getElementById('loading');
         const resultsDiv = document.getElementById('results');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressCount = document.getElementById('progressCount');
+        const progressStatus = document.getElementById('progressStatus');
 
         analyzeBtn.addEventListener('click', () => {
             const urls = repoUrlsInput.value
@@ -499,12 +580,36 @@ https://github.com/owner/repo/pull/456"></textarea>
                 case 'analysisStarted':
                     analyzeBtn.disabled = true;
                     loading.style.display = 'block';
+                    progressBar.style.display = 'block';
                     resultsDiv.innerHTML = '';
+                    pdfBtn.style.display = 'none';
+                    break;
+
+                case 'analysisProgress':
+                    const percent = Math.round((message.current / message.total) * 100);
+                    progressFill.style.width = percent + '%';
+                    progressPercent.textContent = percent + '%';
+                    progressCount.textContent = \`\${message.current}/\${message.total}\`;
+                    
+                    // Show current repository being analyzed
+                    const repoName = message.currentUrl.split('/').slice(-1)[0].replace(/\.git$/, '');
+                    let statusHtml = \`<div class="progress-current">🔍 Currently analyzing: \${repoName}</div>\`;
+                    
+                    // Show next repository if there is one
+                    if (message.current < message.total) {
+                        statusHtml += \`<div class="progress-next">📋 Next up: Repository \${message.current + 1} of \${message.total}</div>\`;
+                    } else {
+                        statusHtml += \`<div class="progress-next">✨ Finalizing results...</div>\`;
+                    }
+                    
+                    progressStatus.innerHTML = statusHtml;
+                    loading.style.display = 'none';
                     break;
 
                 case 'analysisComplete':
                     analyzeBtn.disabled = false;
                     loading.style.display = 'none';
+                    progressBar.style.display = 'none';
                     pdfBtn.style.display = 'block';
                     displayResults(message.results);
                     break;
@@ -512,6 +617,7 @@ https://github.com/owner/repo/pull/456"></textarea>
                 case 'analysisError':
                     analyzeBtn.disabled = false;
                     loading.style.display = 'none';
+                    progressBar.style.display = 'none';
                     resultsDiv.innerHTML = \`<div class="error">❌ Error: \${message.error}</div>\`;
                     break;
             }
