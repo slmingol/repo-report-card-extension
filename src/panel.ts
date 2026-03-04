@@ -424,6 +424,14 @@ export class RepoReportCardPanel {
             box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
         }
 
+        #printBtn {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        }
+
+        #printBtn:hover {
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+        }
+
         /* Print styles */
         @media print {
             body {
@@ -498,7 +506,8 @@ https://github.com/owner/repo/pull/456"></textarea>
 
         <div class="button-group">
             <button id="analyzeBtn">🎓 Grade and Analyze</button>
-            <button id="pdfBtn" style="display: none;">📄 Save to PDF</button>
+            <button id="pdfBtn" style="display: none;">📄 Save to PDF (html2pdf)</button>
+            <button id="printBtn" style="display: none;">🖨️ Print to PDF (Browser)</button>
         </div>
 
         <div id="loading" style="display: none;">
@@ -526,6 +535,7 @@ https://github.com/owner/repo/pull/456"></textarea>
         const vscode = acquireVsCodeApi();
         const analyzeBtn = document.getElementById('analyzeBtn');
         const pdfBtn = document.getElementById('pdfBtn');
+        const printBtn = document.getElementById('printBtn');
         const repoUrlsInput = document.getElementById('repoUrls');
         const loading = document.getElementById('loading');
         const resultsDiv = document.getElementById('results');
@@ -596,37 +606,54 @@ https://github.com/owner/repo/pull/456"></textarea>
             });
             
             // Wait for DOM to stabilize and ensure content is visible
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Extensive debugging
+            console.log('=== PDF GENERATION DEBUG ===');
+            console.log('Element:', element);
+            console.log('Element tagName:', element.tagName);
+            console.log('Element scrollHeight:', element.scrollHeight);
+            console.log('Element offsetHeight:', element.offsetHeight);
+            console.log('Element clientHeight:', element.clientHeight);
+            console.log('Element innerHTML length:', element.innerHTML.length);
+            console.log('Element has content:', element.innerHTML.length > 0);
+            console.log('Results div content:', resultsDiv.innerHTML.substring(0, 200));
+            console.log('Number of repo-cards:', element.querySelectorAll('.repo-card').length);
+            console.log('Window size:', window.innerWidth, 'x', window.innerHeight);
+            
+            // Validate we have content to export
+            if (element.innerHTML.length < 100 || resultsDiv.innerHTML.length < 100) {
+                alert('Error: No content to export. Please analyze repositories first.');
+                throw new Error('No content to export');
+            }
             
             try {
                 const opt = {
-                    margin: [0.5, 0.5, 0.5, 0.5],
+                    margin: 0.5,
                     filename: 'repo-report-card.pdf',
-                    image: { type: 'jpeg', quality: 0.95 },
+                    image: { type: 'jpeg', quality: 0.98 },
                     html2canvas: { 
-                        scale: 1.5,
+                        scale: 2,
                         useCORS: true,
                         allowTaint: true,
                         backgroundColor: '#ffffff',
                         logging: true,
-                        letterSpacing: 0,
-                        scrollY: 0,
-                        scrollX: 0
+                        width: element.scrollWidth,
+                        height: element.scrollHeight,
+                        x: 0,
+                        y: 0
                     },
                     jsPDF: { 
                         unit: 'in', 
                         format: 'letter', 
                         orientation: 'portrait'
-                    },
-                    pagebreak: { mode: 'css', before: '.repo-card' }
+                    }
                 };
                 
-                console.log('Starting PDF generation...');
-                console.log('Element height:', element.scrollHeight);
-                console.log('Element visible:', element.offsetHeight > 0);
-                
-                await html2pdf().set(opt).from(element).save();
-                console.log('PDF generation completed');
+                console.log('Starting PDF generation with options:', opt);
+                const worker = html2pdf().set(opt).from(element);
+                await worker.save();
+                console.log('PDF generation completed successfully');
             } catch (error) {
                 console.error('PDF generation error:', error);
                 alert('Error generating PDF: ' + error.message + '\\n\\nPlease check the console for details.');
@@ -652,6 +679,37 @@ https://github.com/owner/repo/pull/456"></textarea>
             }
         });
 
+        printBtn.addEventListener('click', () => {
+            // Hide form and buttons before printing
+            const formGroup = document.querySelector('.form-group');
+            const buttonGroup = document.querySelector('.button-group');
+            const loadingDiv = document.getElementById('loading');
+            const progressBarDiv = document.getElementById('progressBar');
+            
+            formGroup.style.display = 'none';
+            buttonGroup.style.display = 'none';
+            loadingDiv.style.display = 'none';
+            progressBarDiv.style.display = 'none';
+            
+            // Add a note about using browser print dialog
+            const note = document.createElement('div');
+            note.style.cssText = 'background: #fff3cd; border: 1px solid #ffc107; padding: 10px; margin: 10px 0; border-radius: 5px; text-align: center;';
+            note.innerHTML = '<strong>📄 Print Dialog Instructions:</strong><br>In the print dialog, select "Save as PDF" as the destination to save this report as a PDF file.';
+            document.querySelector('.container').insertBefore(note, document.querySelector('.container').firstChild);
+            
+            // Trigger browser print dialog
+            setTimeout(() => {
+                window.print();
+                
+                // Cleanup after print dialog closes
+                setTimeout(() => {
+                    formGroup.style.display = '';
+                    buttonGroup.style.display = '';
+                    note.remove();
+                }, 1000);
+            }, 100);
+        });
+
         window.addEventListener('message', event => {
             const message = event.data;
 
@@ -662,6 +720,7 @@ https://github.com/owner/repo/pull/456"></textarea>
                     progressBar.style.display = 'block';
                     resultsDiv.innerHTML = '';
                     pdfBtn.style.display = 'none';
+                    printBtn.style.display = 'none';
                     break;
 
                 case 'analysisProgress':
@@ -690,6 +749,7 @@ https://github.com/owner/repo/pull/456"></textarea>
                     loading.style.display = 'none';
                     progressBar.style.display = 'none';
                     pdfBtn.style.display = 'block';
+                    printBtn.style.display = 'block';
                     displayResults(message.results);
                     break;
 
