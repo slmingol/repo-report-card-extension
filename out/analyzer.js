@@ -36,9 +36,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.analyzeRepositories = analyzeRepositories;
 const vscode = __importStar(require("vscode"));
 const git_1 = require("./git");
-async function analyzeRepositories(repoUrls) {
+async function analyzeRepositories(repoUrls, progressCallback) {
     const results = [];
-    for (const url of repoUrls) {
+    for (let i = 0; i < repoUrls.length; i++) {
+        const url = repoUrls[i];
+        // Report progress
+        if (progressCallback) {
+            progressCallback(i + 1, repoUrls.length, url);
+        }
         try {
             // Check if this is a PR URL
             const isPRUrl = /github\.com\/[^\/]+\/[^\/]+\/pull\/\d+/.test(url);
