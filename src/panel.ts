@@ -103,10 +103,12 @@ export class RepoReportCardPanel {
             box-sizing: border-box;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Helvetica, Arial, sans-serif;
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 20px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         .container {
             max-width: 1000px;
@@ -289,6 +291,8 @@ export class RepoReportCardPanel {
             color: #666;
             line-height: 1.6;
             margin-bottom: 15px;
+            word-spacing: normal;
+            letter-spacing: normal;
         }
 
         .improvement-list {
@@ -301,6 +305,8 @@ export class RepoReportCardPanel {
             margin: 10px 0;
             border-radius: 8px;
             border-left: 4px solid #667eea;
+            word-spacing: normal;
+            letter-spacing: normal;
         }
 
         .improvement-category {
@@ -369,6 +375,13 @@ export class RepoReportCardPanel {
                 page-break-after: always;
             }
         }
+
+        /* PDF export optimization */
+        .pdf-export * {
+            letter-spacing: 0 !important;
+            word-spacing: 0 !important;
+            text-rendering: geometricPrecision !important;
+        }
     </style>
 </head>
 <body>
@@ -434,7 +447,15 @@ https://github.com/owner/repo/pull/456"></textarea>
                 margin: 0.5,
                 filename: 'repo-report-card.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true,
+                    letterRendering: true,
+                    allowTaint: true,
+                    logging: false,
+                    dpi: 300,
+                    letterSpacing: 0
+                },
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
             
@@ -447,10 +468,27 @@ https://github.com/owner/repo/pull/456"></textarea>
             buttonGroup.style.display = 'none';
             loadingDiv.style.display = 'none';
             
+            // Add PDF-specific class to improve text rendering
+            element.classList.add('pdf-export');
+            
+            // Force text normalization to prevent spacing issues
+            const textElements = element.querySelectorAll('.summary, .improvement-item, .assessment-title, .repo-name');
+            textElements.forEach(el => {
+                el.style.letterSpacing = '0px';
+                el.style.wordSpacing = '0px';
+            });
+            
             html2pdf().set(opt).from(element).save().then(() => {
-                // Restore visibility after PDF generation
+                // Restore visibility and remove PDF class after PDF generation
                 formGroup.style.display = '';
                 buttonGroup.style.display = '';
+                element.classList.remove('pdf-export');
+                
+                // Reset text spacing
+                textElements.forEach(el => {
+                    el.style.letterSpacing = '';
+                    el.style.wordSpacing = '';
+                });
             });
         });
 
