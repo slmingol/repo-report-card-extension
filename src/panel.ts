@@ -814,7 +814,6 @@ https://github.com/owner/repo/pull/456"></textarea>
             // Individual reports
             data.analyses.forEach(analysis => {
                 const grade = getLetterGrade(analysis.cleanlinessScore);
-                const overallGrade = getLetterGrade(analysis.score)
                 const quote = getSkinnerQuote(analysis.cleanlinessScore);
 
                 html += \`<div class="repo-card">
