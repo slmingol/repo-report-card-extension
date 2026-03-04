@@ -464,6 +464,14 @@ export class RepoReportCardPanel {
             word-spacing: 0 !important;
             text-rendering: geometricPrecision !important;
         }
+        
+        .pdf-export {
+            background: white !important;
+        }
+        
+        .pdf-export body {
+            background: white !important;
+        }
     </style>
 </head>
 <body>
@@ -543,34 +551,11 @@ https://github.com/owner/repo/pull/456"></textarea>
 
         pdfBtn.addEventListener('click', async () => {
             const element = document.querySelector('.container');
-            const opt = {
-                margin: 0.5,
-                filename: 'repo-report-card.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2, 
-                    useCORS: true,
-                    letterRendering: true,
-                    allowTaint: true,
-                    logging: false,
-                    dpi: 300,
-                    letterSpacing: 0,
-                    windowWidth: 1200,
-                    windowHeight: element.scrollHeight
-                },
-                jsPDF: { 
-                    unit: 'in', 
-                    format: 'letter', 
-                    orientation: 'portrait',
-                    compress: true
-                },
-                pagebreak: { 
-                    mode: ['avoid-all', 'css', 'legacy'],
-                    before: '.repo-card',
-                    after: '.ranking'
-                },
-                enableLinks: false
-            };
+            
+            // Show generating message
+            const originalText = pdfBtn.textContent;
+            pdfBtn.textContent = '⏳ Generating PDF...';
+            pdfBtn.disabled = true;
             
             // Hide form and buttons before generating PDF
             const formGroup = document.querySelector('.form-group');
@@ -583,6 +568,23 @@ https://github.com/owner/repo/pull/456"></textarea>
             loadingDiv.style.display = 'none';
             progressBarDiv.style.display = 'none';
             
+            // Set body background to white for PDF
+            const originalBodyBg = document.body.style.background;
+            document.body.style.background = 'white';
+            
+            // Ensure all images are loaded
+            const images = element.querySelectorAll('img');
+            const imageLoadPromises = Array.from(images).map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise((resolve) => {
+                    img.onload = resolve;
+                    img.onerror = resolve;
+                    setTimeout(resolve, 1000); // Timeout after 1 second
+                });
+            });
+            
+            await Promise.all(imageLoadPromises);
+            
             // Add PDF-specific class to improve text rendering
             element.classList.add('pdf-export');
             
@@ -593,14 +595,41 @@ https://github.com/owner/repo/pull/456"></textarea>
                 el.style.wordSpacing = '0px';
             });
             
-            // Wait a moment for the DOM to stabilize
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Wait for DOM to stabilize and ensure content is visible
+            await new Promise(resolve => setTimeout(resolve, 300));
             
             try {
+                const opt = {
+                    margin: [0.5, 0.5, 0.5, 0.5],
+                    filename: 'repo-report-card.pdf',
+                    image: { type: 'jpeg', quality: 0.95 },
+                    html2canvas: { 
+                        scale: 1.5,
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#ffffff',
+                        logging: true,
+                        letterSpacing: 0,
+                        scrollY: 0,
+                        scrollX: 0
+                    },
+                    jsPDF: { 
+                        unit: 'in', 
+                        format: 'letter', 
+                        orientation: 'portrait'
+                    },
+                    pagebreak: { mode: 'css', before: '.repo-card' }
+                };
+                
+                console.log('Starting PDF generation...');
+                console.log('Element height:', element.scrollHeight);
+                console.log('Element visible:', element.offsetHeight > 0);
+                
                 await html2pdf().set(opt).from(element).save();
+                console.log('PDF generation completed');
             } catch (error) {
                 console.error('PDF generation error:', error);
-                alert('Error generating PDF. Please try again.');
+                alert('Error generating PDF: ' + error.message + '\\n\\nPlease check the console for details.');
             } finally {
                 // Restore visibility and remove PDF class after PDF generation
                 formGroup.style.display = '';
@@ -608,11 +637,18 @@ https://github.com/owner/repo/pull/456"></textarea>
                 progressBarDiv.style.display = 'none';
                 element.classList.remove('pdf-export');
                 
+                // Restore body background
+                document.body.style.background = originalBodyBg;
+                
                 // Reset text spacing
                 textElements.forEach(el => {
                     el.style.letterSpacing = '';
                     el.style.wordSpacing = '';
                 });
+                
+                // Restore button
+                pdfBtn.textContent = originalText;
+                pdfBtn.disabled = false;
             }
         });
 
